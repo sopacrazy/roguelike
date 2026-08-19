@@ -17,14 +17,22 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     dashSpeed: GAME_CONFIG.player.dashSpeed,
     dashDuration: GAME_CONFIG.player.dashDuration,
     dashCooldown: GAME_CONFIG.player.dashCooldown,
+    ultimateCooldown: GAME_CONFIG.player.ultimateCooldown,
+    ultimateArrowCount: GAME_CONFIG.player.ultimateArrowCount,
+    ultimateDamagePerArrow: GAME_CONFIG.player.ultimateDamagePerArrow,
+    ultimateImpactRadius: GAME_CONFIG.player.ultimateImpactRadius,
+    ultimateDuration: GAME_CONFIG.player.ultimateDuration,
+    ultimateCoverage: GAME_CONFIG.player.ultimateCoverage,
     lifesteal: 0,
   };
 
   public isAttacking: boolean = false;
   public isDashing: boolean = false;
   public isInvulnerable: boolean = false;
+  public isCastingUltimate: boolean = false;
   public lastAttackTime: number = 0;
   public lastDashTime: number = 0;
+  public lastUltimateTime: number = -Infinity;
   public aimAngle: number = 0;
   public appliedUpgrades: string[] = [];
   public arrows: Phaser.Physics.Arcade.Sprite[] = [];
@@ -46,6 +54,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private walkAnimTimer: number = 0;
   private walkFrame: number = 0;
   private ghostTrailTimer: number = 0;
+
+  // The ultimate's key ("E") is read via a raw DOM listener instead of
+  // Phaser's Key/JustDown() system - that route was unreliable for this key
+  // in testing (stayed permanently "not down" even though the browser event
+  // itself arrived fine), while a plain keydown listener never missed it.
+  private ultimateKeyPressed: boolean = false;
+  private handleUltimateKeyDown = (e: KeyboardEvent) => {
+    if (e.code === 'KeyE') {
+      this.ultimateKeyPressed = true;
+    }
+  };
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, 'player_idle');
@@ -80,6 +99,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     } else {
       this.keys = {} as any;
     }
+
+    window.addEventListener('keydown', this.handleUltimateKeyDown);
+  }
+
+  public destroy(fromScene?: boolean) {
+    window.removeEventListener('keydown', this.handleUltimateKeyDown);
+    super.destroy(fromScene);
   }
 
   public update(time: number, delta: number, pointer: Phaser.Input.Pointer) {
@@ -143,6 +169,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.tryDash(time);
     }
     touchInput.dashRequested = false;
+
+    // Handle Ultimate (arrow rain)
+    if (this.ultimateKeyPressed || touchInput.ultimateRequested) {
+      this.tryUltimate(time);
+    }
+    this.ultimateKeyPressed = false;
+    touchInput.ultimateRequested = false;
 
     if (this.isDashing) {
       // Spawn ghost trail during dash
@@ -268,6 +301,167 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return true;
   }
 
+  // Ultimate: a rain of arrows falling across most of the current room.
+  // Purely an area-denial nuke - doesn't require aim, just timing.
+  public tryUltimate(time: number): boolean {
+    if (this.isCastingUltimate || time - this.lastUltimateTime < this.stats.ultimateCooldown) {
+      return false;
+    }
+
+    const scene = this.scene as any;
+    const room = scene.roomSystem?.currentRoom;
+    if (!room) return false;
+
+    this.lastUltimateTime = time;
+    this.isCastingUltimate = true;
+
+    const tile = 32;
+    const coverage = this.stats.ultimateCoverage;
+    const fullW = room.w * tile;
+    const fullH = room.h * tile;
+    const areaW = fullW * coverage;
+    const areaH = fullH * coverage;
+    const areaX = room.x * tile + (fullW - areaW) / 2;
+    const areaY = room.y * tile + (fullH - areaH) / 2;
+
+    // Dramatic wind-up: screen darkens briefly and a warning banner flashes
+    // while the cast sound rises, then the volley launches.
+    const dungeonScene = this.scene as any;
+    const dimmer = this.scene.add.rectangle(
+      this.scene.cameras.main.worldView.centerX,
+      this.scene.cameras.main.worldView.centerY,
+      this.scene.scale.width * 2,
+      this.scene.scale.height * 2,
+      0x1a0800,
+      0
+    );
+    dimmer.setScrollFactor(0.85);
+    dimmer.setDepth(19);
+    this.scene.tweens.add({
+      targets: dimmer,
+      alpha: 0.35,
+      duration: 250,
+      yoyo: true,
+      hold: 150,
+      onComplete: () => dimmer.destroy(),
+    });
+
+    const banner = this.scene.add.text(this.x, this.y - 40, 'CHUVA DE FLECHAS!', {
+      fontFamily: '"Press Start 2P", monospace',
+      fontSize: '10px',
+      color: '#fbbf24',
+      stroke: '#000000',
+      strokeThickness: 4,
+    });
+    banner.setOrigin(0.5);
+    banner.setDepth(21);
+    this.scene.tweens.add({
+      targets: banner,
+      y: banner.y - 20,
+      alpha: 0,
+      duration: 900,
+      delay: 300,
+      ease: 'Cubic.easeOut',
+      onComplete: () => banner.destroy(),
+    });
+
+    SoundFX.playUltimateCast();
+
+    const arrowCount = this.stats.ultimateArrowCount;
+    const totalDuration = this.stats.ultimateDuration;
+    const windUp = 450; // matches the cast sound's riser before arrows start falling
+
+    for (let i = 0; i < arrowCount; i++) {
+      const dropX = areaX + Math.random() * areaW;
+      const dropY = areaY + Math.random() * areaH;
+      const fallDelay = windUp + Math.random() * totalDuration;
+
+      this.scene.time.delayedCall(fallDelay, () => {
+        this.spawnRainArrow(dropX, dropY);
+      });
+    }
+
+    this.scene.time.delayedCall(windUp + totalDuration + 300, () => {
+      this.isCastingUltimate = false;
+    });
+
+    return true;
+  }
+
+  private spawnRainArrow(x: number, y: number) {
+    if (!this.scene) return;
+
+    // Warning telegraph on the ground, then the arrow drops in from above
+    const telegraph = this.scene.add.circle(x, y, 3, 0xfbbf24, 0.5);
+    telegraph.setDepth(14);
+    this.scene.tweens.add({
+      targets: telegraph,
+      radius: this.stats.ultimateImpactRadius,
+      alpha: 0,
+      duration: 260,
+      ease: 'Cubic.easeOut',
+      onComplete: () => {
+        telegraph.destroy();
+        this.landRainArrow(x, y);
+      },
+    });
+
+    const fallingArrow = this.scene.add.sprite(x, y - 90, 'arrow');
+    fallingArrow.setRotation(Math.PI / 2);
+    fallingArrow.setTint(0xfbbf24);
+    fallingArrow.setDepth(16);
+    this.scene.tweens.add({
+      targets: fallingArrow,
+      y,
+      duration: 260,
+      ease: 'Cubic.easeIn',
+      onComplete: () => fallingArrow.destroy(),
+    });
+  }
+
+  private landRainArrow(x: number, y: number) {
+    if (!this.scene) return;
+
+    SoundFX.playHit();
+    this.scene.cameras.main.shake(90, 0.006);
+
+    // Impact dust burst
+    for (let i = 0; i < 5; i++) {
+      const spark = this.scene.add.sprite(
+        x + Phaser.Math.Between(-6, 6),
+        y + Phaser.Math.Between(-6, 6),
+        'particle_smoke'
+      );
+      spark.setDepth(15);
+      spark.setTint(0xfbbf24);
+      const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+      const dist = Phaser.Math.Between(10, 22);
+      this.scene.tweens.add({
+        targets: spark,
+        x: spark.x + Math.cos(angle) * dist,
+        y: spark.y + Math.sin(angle) * dist,
+        alpha: 0,
+        scale: 1.6,
+        duration: 300,
+        onComplete: () => spark.destroy(),
+      });
+    }
+
+    // Damage any enemy within the impact radius
+    const scene = this.scene as any;
+    const enemies = scene.roomSystem?.activeEnemies as Array<{ active: boolean; state: string; x: number; y: number; takeDamage: (amount: number, sx: number, sy: number) => boolean }> | undefined;
+    if (!enemies) return;
+
+    const radius = this.stats.ultimateImpactRadius;
+    for (const enemy of enemies) {
+      if (!enemy.active || enemy.state === 'dead') continue;
+      const dist = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
+      if (dist <= radius) {
+        enemy.takeDamage(this.stats.ultimateDamagePerArrow, x, y);
+      }
+    }
+  }
+
   private spawnGhostTrail() {
     const ghost = this.scene.add.sprite(this.x, this.y, this.texture.key);
     ghost.setFlipX(this.flipX);
@@ -381,6 +575,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   public getDashCooldownProgress(time: number): number {
     const elapsed = time - this.lastDashTime;
     return Math.min(1, elapsed / this.stats.dashCooldown);
+  }
+
+  public getUltimateCooldownProgress(time: number): number {
+    const elapsed = time - this.lastUltimateTime;
+    return Math.min(1, elapsed / this.stats.ultimateCooldown);
+  }
+
+  public getUltimateCooldownRemainingMs(time: number): number {
+    const elapsed = time - this.lastUltimateTime;
+    return Math.max(0, this.stats.ultimateCooldown - elapsed);
   }
 
   public getAttackCooldownProgress(time: number): number {

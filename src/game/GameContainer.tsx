@@ -21,6 +21,8 @@ export const GameContainer: React.FC = () => {
   const [maxHp, setMaxHp] = useState<number>(100);
   const [dashCdProgress, setDashCdProgress] = useState<number>(1);
   const [attackCdProgress, setAttackCdProgress] = useState<number>(1);
+  const [ultimateCdProgress, setUltimateCdProgress] = useState<number>(1);
+  const [ultimateCdRemainingMs, setUltimateCdRemainingMs] = useState<number>(0);
   const [currentRoomName, setCurrentRoomName] = useState<string>('Sala Inicial');
   const [currentStageNumber, setCurrentStageNumber] = useState<number>(1);
   const [enemiesRemainingInRoom, setEnemiesRemainingInRoom] = useState<number>(0);
@@ -78,6 +80,8 @@ export const GameContainer: React.FC = () => {
         setMaxHp(data.maxHp);
         setDashCdProgress(data.dashCdProgress);
         setAttackCdProgress(data.attackCdProgress);
+        setUltimateCdProgress(data.ultimateCdProgress);
+        setUltimateCdRemainingMs(data.ultimateCdRemainingMs);
         setCurrentRoomName(data.currentRoomName);
         setCurrentStageNumber(data.currentStageNumber);
         setEnemiesRemainingInRoom(data.enemiesRemainingInRoom);
@@ -170,6 +174,8 @@ export const GameContainer: React.FC = () => {
             maxHp={maxHp}
             dashCdProgress={dashCdProgress}
             attackCdProgress={attackCdProgress}
+            ultimateCdProgress={ultimateCdProgress}
+            ultimateCdRemainingMs={ultimateCdRemainingMs}
             currentRoomName={currentRoomName}
             currentStageNumber={currentStageNumber}
             enemiesRemainingInRoom={enemiesRemainingInRoom}
@@ -182,7 +188,7 @@ export const GameContainer: React.FC = () => {
           />
 
           {/* Touch Controls (mobile only) */}
-          <TouchControls />
+          <TouchControls ultimateCdProgress={ultimateCdProgress} ultimateCdRemainingMs={ultimateCdRemainingMs} />
         </>
       )}
 

@@ -6,4 +6,5 @@ export const touchInput = {
   moveX: 0,
   moveY: 0,
   dashRequested: false,
+  ultimateRequested: false,
 };

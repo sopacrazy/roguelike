@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Wind } from 'lucide-react';
+import { Wind, CloudRain } from 'lucide-react';
 import { touchInput } from '../game/TouchInputState';
 import { useIsMobileLayout } from './useIsMobileLayout';
 
@@ -9,7 +9,13 @@ import { useIsMobileLayout } from './useIsMobileLayout';
 // bow auto-aims and fires at the nearest enemy on its own (see
 // Player.update) - there's no fire button, the player only has to worry
 // about positioning and dodging. Desktop keeps mouse aim + click to shoot.
-export const TouchControls: React.FC = () => {
+interface TouchControlsProps {
+  ultimateCdProgress: number; // 0 to 1
+  ultimateCdRemainingMs: number;
+}
+
+export const TouchControls: React.FC<TouchControlsProps> = ({ ultimateCdProgress, ultimateCdRemainingMs }) => {
+  const isUltimateReady = ultimateCdProgress >= 0.99;
   const isMobile = useIsMobileLayout();
   const knobRef = useRef<HTMLDivElement>(null);
   const activePointerId = useRef<number | null>(null);
@@ -97,6 +103,35 @@ export const TouchControls: React.FC = () => {
       >
         <Wind className="w-7 h-7" />
         <span className="text-[9px] font-pixel mt-1">DASH</span>
+      </button>
+
+      {/* Ultimate button - above the dash button. Shows a fill overlay plus
+          a countdown number while on cooldown, so it's clear at a glance
+          when it'll be ready again instead of just looking clickable the
+          whole time. */}
+      <button
+        onPointerDown={(e) => {
+          e.currentTarget.setPointerCapture(e.pointerId);
+          touchInput.ultimateRequested = true;
+        }}
+        className={`pixel-btn pointer-events-auto absolute bottom-32 right-9 w-14 h-14 rounded-full flex flex-col items-center justify-center touch-none overflow-hidden ${
+          isUltimateReady ? 'bg-amber-600 active:bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-300'
+        }`}
+      >
+        {!isUltimateReady && (
+          <div
+            className="absolute bottom-0 left-0 right-0 bg-slate-950/70"
+            style={{ height: `${(1 - ultimateCdProgress) * 100}%` }}
+          />
+        )}
+        {isUltimateReady ? (
+          <>
+            <CloudRain className="w-5 h-5 relative z-10" />
+            <span className="text-[7px] font-pixel mt-0.5 relative z-10">ULT</span>
+          </>
+        ) : (
+          <span className="text-lg font-pixel relative z-10">{Math.ceil(ultimateCdRemainingMs / 1000)}</span>
+        )}
       </button>
     </div>
   );

@@ -20,6 +20,8 @@ export class DungeonScene extends Phaser.Scene {
     maxHp: number;
     dashCdProgress: number;
     attackCdProgress: number;
+    ultimateCdProgress: number;
+    ultimateCdRemainingMs: number;
     currentRoomName: string;
     currentStageNumber: number;
     enemiesRemainingInRoom: number;
@@ -329,6 +331,8 @@ export class DungeonScene extends Phaser.Scene {
         maxHp: this.player.stats.maxHp,
         dashCdProgress: this.player.getDashCooldownProgress(time),
         attackCdProgress: this.player.getAttackCooldownProgress(time),
+        ultimateCdProgress: this.player.getUltimateCooldownProgress(time),
+        ultimateCdRemainingMs: this.player.getUltimateCooldownRemainingMs(time),
         currentRoomName: this.roomSystem.currentRoom ? this.roomSystem.currentRoom.name : 'Dungeon',
         currentStageNumber: room ? room.stageNumber : 1,
         enemiesRemainingInRoom: room && !room.cleared ? totalInRoom - defeatedInRoom : 0,

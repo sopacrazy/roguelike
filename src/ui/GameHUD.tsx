@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, VolumeX, Wind, Swords, Target } from 'lucide-react';
+import { Volume2, VolumeX, Wind, Swords, Target, CloudRain } from 'lucide-react';
 import { SoundFX } from '../audio/SoundFX';
 import { useIsMobileLayout } from './useIsMobileLayout';
 
@@ -8,6 +8,8 @@ interface GameHUDProps {
   maxHp: number;
   dashCdProgress: number; // 0 to 1
   attackCdProgress: number; // 0 to 1
+  ultimateCdProgress: number; // 0 to 1
+  ultimateCdRemainingMs: number;
   currentRoomName: string;
   currentStageNumber: number;
   enemiesRemainingInRoom: number;
@@ -24,6 +26,8 @@ export const GameHUD: React.FC<GameHUDProps> = ({
   maxHp,
   dashCdProgress,
   attackCdProgress,
+  ultimateCdProgress,
+  ultimateCdRemainingMs,
   currentRoomName,
   currentStageNumber,
   enemiesRemainingInRoom,
@@ -37,6 +41,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
   const hpPercent = Math.max(0, Math.min(100, (hp / maxHp) * 100));
   const isDashReady = dashCdProgress >= 0.99;
   const isAttackReady = attackCdProgress >= 0.99;
+  const isUltimateReady = ultimateCdProgress >= 0.99;
   const isMobile = useIsMobileLayout();
 
   return (
@@ -169,6 +174,33 @@ export const GameHUD: React.FC<GameHUDProps> = ({
               <span className="text-[9px] font-pixel tracking-wider relative z-10">DASH</span>
             </div>
             <span className="text-sm text-slate-400 mt-1">ESPAÇO</span>
+          </div>
+
+          {/* Ultimate */}
+          <div className="flex flex-col items-center">
+            <div
+              className={`pixel-panel relative w-14 h-14 flex flex-col items-center justify-center overflow-hidden ${
+                isUltimateReady ? 'bg-slate-800 text-amber-300 animate-pulse' : 'bg-slate-900 text-slate-500'
+              }`}
+            >
+              {!isUltimateReady && (
+                <div
+                  className="absolute bottom-0 left-0 right-0 bg-amber-950"
+                  style={{ height: `${(1 - ultimateCdProgress) * 100}%` }}
+                />
+              )}
+              {isUltimateReady ? (
+                <>
+                  <CloudRain className="w-5 h-5 mb-0.5 relative z-10" />
+                  <span className="text-[9px] font-pixel tracking-wider relative z-10">ULT</span>
+                </>
+              ) : (
+                <span className="text-xl font-pixel text-slate-200 relative z-10">
+                  {Math.ceil(ultimateCdRemainingMs / 1000)}
+                </span>
+              )}
+            </div>
+            <span className="text-sm text-slate-400 mt-1">E</span>
           </div>
         </div>
         )}

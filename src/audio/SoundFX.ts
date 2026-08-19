@@ -216,6 +216,44 @@ class SoundFXManager {
     osc.stop(this.ctx.currentTime + 0.1);
   }
 
+  // Ultimate cast: rising tension riser into a deep release boom, for the
+  // arrow rain activation
+  public playUltimateCast() {
+    if (this.isMuted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+
+    // Rising riser (builds tension as the sky darkens)
+    const riser = this.ctx.createOscillator();
+    const riserGain = this.ctx.createGain();
+    riser.type = 'sawtooth';
+    riser.frequency.setValueAtTime(120, now);
+    riser.frequency.exponentialRampToValueAtTime(900, now + 0.5);
+    riserGain.gain.setValueAtTime(0.0001, now);
+    riserGain.gain.exponentialRampToValueAtTime(0.16, now + 0.45);
+    riserGain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+    riser.connect(riserGain);
+    riserGain.connect(this.ctx.destination);
+    riser.start(now);
+    riser.stop(now + 0.55);
+
+    // Deep release boom (the volley launches)
+    const boom = this.ctx.createOscillator();
+    const boomGain = this.ctx.createGain();
+    boom.type = 'sine';
+    boom.frequency.setValueAtTime(180, now + 0.45);
+    boom.frequency.exponentialRampToValueAtTime(40, now + 0.85);
+    boomGain.gain.setValueAtTime(0.0001, now + 0.45);
+    boomGain.gain.exponentialRampToValueAtTime(0.35, now + 0.5);
+    boomGain.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
+    boom.connect(boomGain);
+    boomGain.connect(this.ctx.destination);
+    boom.start(now + 0.45);
+    boom.stop(now + 0.9);
+  }
+
   // Enemy death / pop
   public playEnemyDeath() {
     if (this.isMuted) return;

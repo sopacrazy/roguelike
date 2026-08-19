@@ -21,6 +21,12 @@ export const GAME_CONFIG = {
     dashSpeed: 460,
     dashDuration: 180, // ms
     dashCooldown: 1800, // ms
+    ultimateCooldown: 20000, // ms
+    ultimateArrowCount: 26,
+    ultimateDamagePerArrow: 18,
+    ultimateImpactRadius: 26,
+    ultimateDuration: 2400, // ms - how long the rain takes to finish falling
+    ultimateCoverage: 0.7, // fraction of the current room's area it rains over
   },
   enemies: {
     slime: {
