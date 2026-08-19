@@ -19,6 +19,7 @@ export interface RoomDoor {
 export interface RoomData {
   id: string;
   name: string;
+  stageNumber: number; // shown in the HUD as "ESTÁGIO N"
   x: number; // tile X
   y: number; // tile Y
   w: number; // tile Width
@@ -66,6 +67,7 @@ export class RoomSystem {
     const room1: RoomData = {
       id: 'room_1',
       name: 'Sala Inicial',
+      stageNumber: 1,
       x: 10,
       y: 2,
       w: 14,
@@ -84,6 +86,7 @@ export class RoomSystem {
     const room2: RoomData = {
       id: 'room_2',
       name: 'Corredor dos Guardas',
+      stageNumber: 2,
       x: 10,
       y: 16,
       w: 14,
@@ -109,6 +112,7 @@ export class RoomSystem {
     const room3: RoomData = {
       id: 'room_3',
       name: 'Grande Salão de Pedra',
+      stageNumber: 3,
       x: 7,
       y: 32,
       w: 20,
@@ -137,6 +141,7 @@ export class RoomSystem {
     const room4: RoomData = {
       id: 'room_4',
       name: 'Câmara do Tesouro',
+      stageNumber: 4,
       x: -6,
       y: 35,
       w: 12,
@@ -160,6 +165,7 @@ export class RoomSystem {
     const room5: RoomData = {
       id: 'room_5',
       name: 'Armaria Maldita',
+      stageNumber: 5,
       x: 28,
       y: 35,
       w: 16,
@@ -187,6 +193,7 @@ export class RoomSystem {
     const room6: RoomData = {
       id: 'room_6',
       name: 'Santuário do Guardião',
+      stageNumber: 6,
       x: 26,
       y: 51,
       w: 20,

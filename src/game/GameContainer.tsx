@@ -22,6 +22,7 @@ export const GameContainer: React.FC = () => {
   const [dashCdProgress, setDashCdProgress] = useState<number>(1);
   const [attackCdProgress, setAttackCdProgress] = useState<number>(1);
   const [currentRoomName, setCurrentRoomName] = useState<string>('Sala Inicial');
+  const [currentStageNumber, setCurrentStageNumber] = useState<number>(1);
   const [enemiesRemainingInRoom, setEnemiesRemainingInRoom] = useState<number>(0);
   const [enemiesTotalInRoom, setEnemiesTotalInRoom] = useState<number>(0);
   const [bossHp, setBossHp] = useState<number | null>(null);
@@ -78,6 +79,7 @@ export const GameContainer: React.FC = () => {
         setDashCdProgress(data.dashCdProgress);
         setAttackCdProgress(data.attackCdProgress);
         setCurrentRoomName(data.currentRoomName);
+        setCurrentStageNumber(data.currentStageNumber);
         setEnemiesRemainingInRoom(data.enemiesRemainingInRoom);
         setEnemiesTotalInRoom(data.enemiesTotalInRoom);
         setBossHp(data.bossHp);
@@ -169,6 +171,7 @@ export const GameContainer: React.FC = () => {
             dashCdProgress={dashCdProgress}
             attackCdProgress={attackCdProgress}
             currentRoomName={currentRoomName}
+            currentStageNumber={currentStageNumber}
             enemiesRemainingInRoom={enemiesRemainingInRoom}
             enemiesTotalInRoom={enemiesTotalInRoom}
             bossHp={bossHp}

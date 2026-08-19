@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, VolumeX, Shield, Swords, Sparkles, Target } from 'lucide-react';
+import { Volume2, VolumeX, Wind, Swords, Target } from 'lucide-react';
 import { SoundFX } from '../audio/SoundFX';
 import { useIsMobileLayout } from './useIsMobileLayout';
 
@@ -9,6 +9,7 @@ interface GameHUDProps {
   dashCdProgress: number; // 0 to 1
   attackCdProgress: number; // 0 to 1
   currentRoomName: string;
+  currentStageNumber: number;
   enemiesRemainingInRoom: number;
   enemiesTotalInRoom: number;
   bossHp: number | null;
@@ -24,6 +25,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
   dashCdProgress,
   attackCdProgress,
   currentRoomName,
+  currentStageNumber,
   enemiesRemainingInRoom,
   enemiesTotalInRoom,
   bossHp,
@@ -38,7 +40,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
   const isMobile = useIsMobileLayout();
 
   return (
-    <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 select-none z-10">
+    <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 select-none z-30">
       {/* Top Bar */}
       <div className="flex items-start justify-between w-full gap-1.5 sm:gap-3">
         {/* Player HP Panel */}
@@ -91,7 +93,8 @@ export const GameHUD: React.FC<GameHUDProps> = ({
           {/* Room / Enemy Tracker */}
           <div className="pixel-panel bg-slate-950 p-2 sm:p-3 text-right">
             <div className="text-[10px] sm:text-sm text-slate-400 truncate max-w-[90px] sm:max-w-none">{currentRoomName}</div>
-            <div className="text-xs sm:text-base mt-0.5 flex items-center justify-end gap-1 sm:gap-1.5 whitespace-nowrap">
+            <div className="text-[9px] sm:text-xs text-cyan-400 font-pixel mt-0.5">ESTÁGIO {currentStageNumber}</div>
+            <div className="text-xs sm:text-base mt-1 flex items-center justify-end gap-1 sm:gap-1.5 whitespace-nowrap">
               {enemiesRemainingInRoom > 0 ? (
                 <>
                   <span className="text-amber-400">INIMIGOS:</span>
@@ -100,10 +103,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
                   </span>
                 </>
               ) : (
-                <span className="text-emerald-400 flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  SALA LIMPA
-                </span>
+                <span className="text-emerald-400">SALA LIMPA</span>
               )}
             </div>
           </div>
@@ -165,7 +165,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
                   style={{ height: `${(1 - dashCdProgress) * 100}%` }}
                 />
               )}
-              <Shield className="w-5 h-5 mb-0.5 relative z-10" />
+              <Wind className="w-5 h-5 mb-0.5 relative z-10" />
               <span className="text-[9px] font-pixel tracking-wider relative z-10">DASH</span>
             </div>
             <span className="text-sm text-slate-400 mt-1">ESPAÇO</span>

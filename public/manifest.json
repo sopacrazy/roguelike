@@ -5,5 +5,13 @@
   "display": "standalone",
   "orientation": "landscape",
   "background_color": "#09080e",
-  "theme_color": "#09080e"
+  "theme_color": "#09080e",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }

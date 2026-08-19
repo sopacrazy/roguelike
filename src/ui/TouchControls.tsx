@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Shield } from 'lucide-react';
+import { Wind } from 'lucide-react';
 import { touchInput } from '../game/TouchInputState';
 import { useIsMobileLayout } from './useIsMobileLayout';
 
@@ -95,7 +95,7 @@ export const TouchControls: React.FC = () => {
         }}
         className="pixel-btn pointer-events-auto absolute bottom-8 right-6 w-20 h-20 rounded-full bg-cyan-700 active:bg-cyan-600 text-slate-950 flex flex-col items-center justify-center touch-none"
       >
-        <Shield className="w-7 h-7" />
+        <Wind className="w-7 h-7" />
         <span className="text-[9px] font-pixel mt-1">DASH</span>
       </button>
     </div>

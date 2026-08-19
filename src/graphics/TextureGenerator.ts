@@ -495,12 +495,14 @@ export class TextureGenerator {
     ctx.arc(9, 13, 11, -Math.PI / 2.3, Math.PI / 2.3);
     ctx.stroke();
 
-    // Bowstring
+    // Bowstring - spans between the two limb tips (arc endpoints at
+    // roughly x=11.2), not out near the aim direction where it'd float
+    // disconnected from the wood and stop reading as a bow.
     ctx.strokeStyle = '#e2e8f0';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(18.5, 3.2);
-    ctx.lineTo(18.5, 22.8);
+    ctx.moveTo(11, 2.3);
+    ctx.lineTo(11, 23.7);
     ctx.stroke();
 
     // Grip wrap at center

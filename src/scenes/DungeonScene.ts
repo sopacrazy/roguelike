@@ -21,6 +21,7 @@ export class DungeonScene extends Phaser.Scene {
     dashCdProgress: number;
     attackCdProgress: number;
     currentRoomName: string;
+    currentStageNumber: number;
     enemiesRemainingInRoom: number;
     enemiesTotalInRoom: number;
     bossHp: number | null;
@@ -169,9 +170,13 @@ export class DungeonScene extends Phaser.Scene {
 
     // Top and Bottom walls
     for (let x = rx - 1; x <= rx + rw; x++) {
-      // Check if there is a vertical door
-      const hasTopDoor = room.doors.some((d) => d.direction === 'up' && Math.abs(d.x - x * 32) < 48);
-      const hasBottomDoor = room.doors.some((d) => d.direction === 'down' && Math.abs(d.x - x * 32) < 48);
+      // Compare tile CENTERS to the door's center (doors are 64px/2 tiles
+      // wide, centered on d.x/d.y). Comparing against the tile's corner
+      // instead left an extra tile gap on one side of every door - a hole
+      // in the wall you could walk through even while the door was locked.
+      const tileCenter = x * 32 + 16;
+      const hasTopDoor = room.doors.some((d) => d.direction === 'up' && Math.abs(d.x - tileCenter) < 32);
+      const hasBottomDoor = room.doors.some((d) => d.direction === 'down' && Math.abs(d.x - tileCenter) < 32);
 
       if (!hasTopDoor) {
         this.createWallTile(x, ry - 1);
@@ -183,8 +188,9 @@ export class DungeonScene extends Phaser.Scene {
 
     // Left and Right walls
     for (let y = ry; y < ry + rh; y++) {
-      const hasLeftDoor = room.doors.some((d) => d.direction === 'left' && Math.abs(d.y - y * 32) < 48);
-      const hasRightDoor = room.doors.some((d) => d.direction === 'right' && Math.abs(d.y - y * 32) < 48);
+      const tileCenter = y * 32 + 16;
+      const hasLeftDoor = room.doors.some((d) => d.direction === 'left' && Math.abs(d.y - tileCenter) < 32);
+      const hasRightDoor = room.doors.some((d) => d.direction === 'right' && Math.abs(d.y - tileCenter) < 32);
 
       if (!hasLeftDoor) {
         this.createWallTile(rx - 1, y);
@@ -323,6 +329,7 @@ export class DungeonScene extends Phaser.Scene {
         dashCdProgress: this.player.getDashCooldownProgress(time),
         attackCdProgress: this.player.getAttackCooldownProgress(time),
         currentRoomName: this.roomSystem.currentRoom ? this.roomSystem.currentRoom.name : 'Dungeon',
+        currentStageNumber: room ? room.stageNumber : 1,
         enemiesRemainingInRoom: room && !room.cleared ? totalInRoom - defeatedInRoom : 0,
         enemiesTotalInRoom: totalInRoom,
         bossHp: bossObj ? bossObj.hp : null,
