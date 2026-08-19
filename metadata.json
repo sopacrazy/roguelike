@@ -1,0 +1,6 @@
+{
+  "name": "Dungeon Crawler Roguelike 2D",
+  "description": "Protótipo de RPG roguelike 2D top-down para navegador com combate em tempo real, salas com portas trancadas, inimigos (Slime, Esqueleto, Arqueiro), sala de tesouro com melhorias e batalha contra o Guardião da Dungeon.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
