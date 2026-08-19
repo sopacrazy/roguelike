@@ -80,7 +80,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     // Bow overlay: rotates independently of the body sprite so it always
     // points at the mouse cursor, matching the aim direction the arrows fire on.
-    this.bowSprite = scene.add.sprite(x, y, 'player_bow');
+    this.bowSprite = scene.add.sprite(x, y, 'player_bow_img');
+    this.bowSprite.setScale(1.25);
     this.bowSprite.setDepth(11);
 
     const kb = scene.input.keyboard;
@@ -155,7 +156,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.x + Math.cos(this.aimAngle) * bowOffset,
       this.y + Math.sin(this.aimAngle) * bowOffset
     );
-    this.bowSprite.setRotation(this.aimAngle);
+    // The icon art itself is drawn at a 90deg offset from the "aim = +X"
+    // convention the rest of this code assumes, so compensate here.
+    this.bowSprite.setRotation(this.aimAngle + Math.PI / 2);
     // Render the bow behind the body when aiming up (away from camera) and
     // in front when aiming down, so it doesn't float over the character's back.
     this.bowSprite.setDepth(Math.sin(this.aimAngle) < 0 ? this.depth - 1 : this.depth + 1);

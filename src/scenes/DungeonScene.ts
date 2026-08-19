@@ -46,6 +46,10 @@ export class DungeonScene extends Phaser.Scene {
     super({ key: 'DungeonScene' });
   }
 
+  public preload() {
+    this.load.image('player_bow_img', 'icons/bow-icon.png');
+  }
+
   public create() {
     this.totalEnemiesDefeated = 0;
     this.gameStartTime = this.time.now;

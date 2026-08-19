@@ -6,3 +6,9 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Raw item/icon asset packs (unknown license) - only the specific files
+# actually referenced by code get copied into public/ and committed.
+/icons/
+/items/
+/items_outdated/

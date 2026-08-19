@@ -11,7 +11,6 @@ export class TextureGenerator {
     this.createDoors(scene);
     this.createChest(scene);
     this.createPlayerTextures(scene);
-    this.createPlayerBowTexture(scene);
     this.createSlimeTextures(scene);
     this.createSkeletonTextures(scene);
     this.createArcherTextures(scene);
@@ -454,51 +453,13 @@ export class TextureGenerator {
       ctx.fillRect(13, 8, 2, 2);
       ctx.fillRect(17, 8, 2, 2);
 
-      // Arm on right (the bow itself is a separate overlay sprite that
-      // rotates independently to track the mouse cursor - see createPlayerBowTexture)
+      // Arm on right (the bow itself is a separate overlay sprite - see
+      // Player.ts bowSprite - that rotates independently to track the mouse cursor)
       ctx.fillStyle = '#166534';
       ctx.fillRect(21, 15, 3, 5);
 
       canvas.refresh();
     });
-  }
-
-  private static createPlayerBowTexture(scene: Phaser.Scene) {
-    // Standalone bow icon (rotation 0 = pointing along +X) so it can be
-    // rotated each frame to face the mouse cursor independently of the body.
-    if (scene.textures.exists('player_bow')) return;
-    const canvas = scene.textures.createCanvas('player_bow', 26, 26);
-    if (!canvas) return;
-    const ctx = canvas.getContext();
-
-    // Bow limbs (curved arc, tips toward the aim direction on the right)
-    ctx.strokeStyle = '#92400e';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(9, 13, 11, -Math.PI / 2.3, Math.PI / 2.3);
-    ctx.stroke();
-
-    ctx.strokeStyle = '#d97706';
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.arc(9, 13, 11, -Math.PI / 2.3, Math.PI / 2.3);
-    ctx.stroke();
-
-    // Bowstring - spans between the two limb tips (arc endpoints at
-    // roughly x=11.2), not out near the aim direction where it'd float
-    // disconnected from the wood and stop reading as a bow.
-    ctx.strokeStyle = '#e2e8f0';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(11, 2.3);
-    ctx.lineTo(11, 23.7);
-    ctx.stroke();
-
-    // Grip wrap at center
-    ctx.fillStyle = '#451a03';
-    ctx.fillRect(7, 11, 4, 4);
-
-    canvas.refresh();
   }
 
   private static createSlimeTextures(scene: Phaser.Scene) {

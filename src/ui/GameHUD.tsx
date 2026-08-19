@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, VolumeX, Wind, Swords, Target, CloudRain } from 'lucide-react';
+import { Volume2, VolumeX, Wind, Swords, CloudRain } from 'lucide-react';
 import { SoundFX } from '../audio/SoundFX';
 import { useIsMobileLayout } from './useIsMobileLayout';
 
@@ -151,7 +151,12 @@ export const GameHUD: React.FC<GameHUDProps> = ({
                 isAttackReady ? 'bg-slate-800 text-amber-300' : 'bg-slate-900 text-slate-500'
               }`}
             >
-              <Target className="w-5 h-5 mb-0.5" />
+              <img
+                src="/icons/bow-icon.png"
+                alt="Arco"
+                className="w-6 h-6 mb-0.5"
+                style={{ imageRendering: 'pixelated' }}
+              />
               <span className="text-[9px] font-pixel tracking-wider">ARCO</span>
             </div>
             <span className="text-sm text-slate-400 mt-1">MOUSE ESQ</span>
