@@ -1,6 +1,7 @@
 import React from 'react';
 import { Upgrade } from '../config/gameConfig';
 import { Sparkles, Check } from 'lucide-react';
+import { PixelIcon } from './PixelIcon';
 
 interface UpgradeModalProps {
   upgrades: Upgrade[];
@@ -30,8 +31,8 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ upgrades, onSelect }
               className="pixel-btn group relative flex flex-col items-center text-center p-5 bg-slate-900 hover:bg-slate-800 cursor-pointer"
             >
               {/* Icon */}
-              <div className="pixel-panel w-14 h-14 bg-slate-800 flex items-center justify-center text-3xl mb-3">
-                {upg.icon}
+              <div className="pixel-panel w-14 h-14 bg-slate-800 flex items-center justify-center mb-3">
+                <PixelIcon col={upg.iconCoord[0]} row={upg.iconCoord[1]} size={32} />
               </div>
 
               {/* Title */}

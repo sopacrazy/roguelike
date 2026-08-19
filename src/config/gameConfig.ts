@@ -2,7 +2,7 @@ export interface Upgrade {
   id: string;
   title: string;
   description: string;
-  icon: string;
+  iconCoord: [col: number, row: number]; // cell in public/icons/rpg-icons.png
   color: string;
   effect: (player: any) => void;
 }
@@ -66,7 +66,7 @@ export const AVAILABLE_UPGRADES: Upgrade[] = [
     id: 'dmg_boost',
     title: 'Fúria da Lâmina',
     description: 'Aumenta o dano dos ataques em +25%',
-    icon: '⚔️',
+    iconCoord: [3, 5],
     color: 'from-amber-500 to-red-600',
     effect: (player) => {
       player.stats.damageMultiplier += 0.25;
@@ -76,7 +76,7 @@ export const AVAILABLE_UPGRADES: Upgrade[] = [
     id: 'hp_boost',
     title: 'Vitalidade Dracônica',
     description: 'Aumenta a Vida Máxima em +30 e restaura 50 HP',
-    icon: '❤️',
+    iconCoord: [6, 0],
     color: 'from-emerald-500 to-green-600',
     effect: (player) => {
       player.stats.maxHp += 30;
@@ -87,7 +87,7 @@ export const AVAILABLE_UPGRADES: Upgrade[] = [
     id: 'attack_speed',
     title: 'Agilidade do Vento',
     description: 'Velocidade de ataque aumentada em +25%',
-    icon: '⚡',
+    iconCoord: [8, 0],
     color: 'from-cyan-500 to-blue-600',
     effect: (player) => {
       player.stats.attackCooldown = Math.max(180, Math.floor(player.stats.attackCooldown * 0.75));
@@ -97,7 +97,7 @@ export const AVAILABLE_UPGRADES: Upgrade[] = [
     id: 'dash_mastery',
     title: 'Passo Espiritual',
     description: 'Reduz o tempo de recarga do Dash em 35%',
-    icon: '🌀',
+    iconCoord: [6, 2],
     color: 'from-purple-500 to-indigo-600',
     effect: (player) => {
       player.stats.dashCooldown = Math.max(800, Math.floor(player.stats.dashCooldown * 0.65));
@@ -107,7 +107,7 @@ export const AVAILABLE_UPGRADES: Upgrade[] = [
     id: 'move_speed',
     title: 'Botas de Mercúrio',
     description: 'Aumenta a velocidade de movimento em +20%',
-    icon: '👟',
+    iconCoord: [2, 8],
     color: 'from-yellow-400 to-orange-500',
     effect: (player) => {
       player.stats.speed = Math.floor(player.stats.speed * 1.2);
@@ -117,7 +117,7 @@ export const AVAILABLE_UPGRADES: Upgrade[] = [
     id: 'lifesteal_minor',
     title: 'Gume Vampírico',
     description: 'Ataques recuperam 4 HP ao atingir inimigos',
-    icon: '🩸',
+    iconCoord: [0, 9],
     color: 'from-rose-500 to-pink-700',
     effect: (player) => {
       player.stats.lifesteal = (player.stats.lifesteal || 0) + 4;
