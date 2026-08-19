@@ -11,18 +11,69 @@
     user-select: none;
   }
 
+  body {
+    font-family: 'VT323', ui-monospace, monospace;
+  }
+
   canvas {
     image-rendering: pixelated;
     image-rendering: crisp-edges;
   }
 }
 
+/* Blocky display font for titles/labels/buttons - short strings only, it's
+   too wide to stay readable in paragraph text. VT323 (the body default
+   above) covers everything else, including HUD numbers. */
+.font-pixel {
+  font-family: 'Press Start 2P', 'VT323', ui-monospace, monospace;
+}
+
 @keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.96); }
-  to { opacity: 1; transform: scale(1); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeIn 0.12s steps(3) forwards;
+}
+
+/* Retro RPG dialog box: flat fill, hard black border, a 2px inner bevel
+   (light top/left, dark bottom/right) and a hard-edged drop shadow instead
+   of a blurred one - no border-radius, pixel art doesn't do soft corners. */
+.pixel-panel {
+  border-radius: 0;
+  border: 4px solid #000;
+  box-shadow:
+    inset 2px 2px 0 0 rgba(255, 255, 255, 0.08),
+    inset -2px -2px 0 0 rgba(0, 0, 0, 0.5),
+    6px 6px 0 0 rgba(0, 0, 0, 0.6);
+}
+
+/* Press-down button: the hard shadow collapses and the button shifts into
+   its own shadow on click, instead of a hover glow/gradient sheen. */
+.pixel-btn {
+  border-radius: 0;
+  border: 3px solid #000;
+  box-shadow: 4px 4px 0 0 #000;
+  transition: transform 0.05s steps(1), box-shadow 0.05s steps(1);
+}
+
+.pixel-btn:hover {
+  filter: brightness(1.12);
+}
+
+.pixel-btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 0 #000;
+}
+
+/* Hard-stepped outline for blocky pixel-font titles, standing in for
+   antialiased text-shadow blur. */
+.pixel-text-outline {
+  text-shadow:
+    2px 2px 0 #000,
+    -2px 2px 0 #000,
+    2px -2px 0 #000,
+    -2px -2px 0 #000;
 }
 
