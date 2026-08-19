@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { SoundFX } from '../audio/SoundFX';
 import { touchInput } from '../game/TouchInputState';
+import { isMobileDevice } from '../utils/isMobileDevice';
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
   public hp: number;
@@ -84,22 +85,45 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   public update(time: number, delta: number, pointer: Phaser.Input.Pointer) {
     if (!this.active || this.hp <= 0) return;
 
-    // Aim: mouse cursor on desktop, auto-aim at the nearest enemy while the
-    // touch fire button is held on mobile (no cursor to aim with there).
-    if (touchInput.firing) {
+    // Movement input, computed early so mobile can fall back to "face the
+    // way you're moving" when there's no enemy nearby to auto-aim at.
+    let moveX = 0;
+    let moveY = 0;
+    if (this.keys.w?.isDown || this.keys.up?.isDown) moveY -= 1;
+    if (this.keys.s?.isDown || this.keys.down?.isDown) moveY += 1;
+    if (this.keys.a?.isDown || this.keys.left?.isDown) moveX -= 1;
+    if (this.keys.d?.isDown || this.keys.right?.isDown) moveX += 1;
+    if (moveX === 0 && moveY === 0) {
+      // Fall back to the touch joystick when no keyboard key is held
+      moveX = touchInput.moveX;
+      moveY = touchInput.moveY;
+    }
+    const moving = moveX !== 0 || moveY !== 0;
+
+    // Aim + fire: mouse cursor + click on desktop. On mobile there's no
+    // cursor to aim with (and juggling a separate fire button while also
+    // holding the move joystick was fighting the touch input for the
+    // "active pointer" Phaser uses for aim) - so on mobile the bow just
+    // auto-aims at the nearest enemy and fires on its own. The player only
+    // has to worry about moving and dashing.
+    let autoFiring = false;
+    if (isMobileDevice()) {
       const nearestAngle = this.findNearestEnemyAngle();
       if (nearestAngle !== null) {
         this.aimAngle = nearestAngle;
+        autoFiring = true;
+      } else if (moving) {
+        this.aimAngle = Math.atan2(moveY, moveX);
       }
     } else {
       const worldPoint = pointer.positionToCamera(this.scene.cameras.main) as Phaser.Math.Vector2;
       this.aimAngle = Phaser.Math.Angle.Between(this.x, this.y, worldPoint.x, worldPoint.y);
     }
 
-    // Flip sprite towards cursor
+    // Flip sprite towards the aim direction
     this.setFlipX(Math.cos(this.aimAngle) < 0);
 
-    // Keep the bow glued to the player, always pointed at the cursor
+    // Keep the bow glued to the player, always pointed at the aim direction
     const bowOffset = 12;
     this.bowSprite.setPosition(
       this.x + Math.cos(this.aimAngle) * bowOffset,
@@ -130,23 +154,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
-    // Standard 8-direction movement
-    let moveX = 0;
-    let moveY = 0;
-
-    if (this.keys.w?.isDown || this.keys.up?.isDown) moveY -= 1;
-    if (this.keys.s?.isDown || this.keys.down?.isDown) moveY += 1;
-    if (this.keys.a?.isDown || this.keys.left?.isDown) moveX -= 1;
-    if (this.keys.d?.isDown || this.keys.right?.isDown) moveX += 1;
-
-    // Fall back to the touch joystick when no keyboard key is held
-    if (moveX === 0 && moveY === 0) {
-      moveX = touchInput.moveX;
-      moveY = touchInput.moveY;
-    }
-
-    const moving = moveX !== 0 || moveY !== 0;
-
     if (moving) {
       const dir = new Phaser.Math.Vector2(moveX, moveY).normalize();
       this.setVelocity(dir.x * this.stats.speed, dir.y * this.stats.speed);
@@ -163,8 +170,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.setTexture('player_idle');
     }
 
-    // Auto attack: left mouse button held (desktop) or fire button held (touch)
-    if ((pointer.isDown && pointer.leftButtonDown()) || touchInput.firing) {
+    // Attack: left mouse held (desktop) or auto-fire at a nearby enemy (mobile)
+    if ((pointer.isDown && pointer.leftButtonDown()) || autoFiring) {
       this.tryAttack(time);
     }
   }

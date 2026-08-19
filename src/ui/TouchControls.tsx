@@ -1,12 +1,12 @@
 import React, { useRef } from 'react';
-import { Target, Shield } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { touchInput } from '../game/TouchInputState';
 import { useIsMobileLayout } from './useIsMobileLayout';
 
-// Touch controls for mobile: a virtual joystick to move, and a fire button
-// that auto-aims/shoots at the nearest enemy while held (see Player.update -
-// this component only writes to the shared touchInput bridge, it never
-// touches Phaser directly). Desktop keeps mouse aim + click to shoot.
+// Touch controls for mobile: just a virtual joystick to move, and a dash
+// button. The bow auto-aims and fires at the nearest enemy on its own (see
+// Player.update) - there's no fire button, the player only has to worry
+// about positioning and dodging. Desktop keeps mouse aim + click to shoot.
 export const TouchControls: React.FC = () => {
   const isMobile = useIsMobileLayout();
   const baseRef = useRef<HTMLDivElement>(null);
@@ -82,34 +82,16 @@ export const TouchControls: React.FC = () => {
         />
       </div>
 
-      {/* Fire button (auto-aims at the nearest enemy while held) - bottom right */}
-      <button
-        onPointerDown={(e) => {
-          e.currentTarget.setPointerCapture(e.pointerId);
-          touchInput.firing = true;
-        }}
-        onPointerUp={() => {
-          touchInput.firing = false;
-        }}
-        onPointerCancel={() => {
-          touchInput.firing = false;
-        }}
-        className="pixel-btn pointer-events-auto absolute bottom-8 right-6 w-20 h-20 rounded-full bg-amber-600 active:bg-amber-500 text-slate-950 flex flex-col items-center justify-center touch-none"
-      >
-        <Target className="w-7 h-7" />
-        <span className="text-[9px] font-pixel mt-1">ATIRAR</span>
-      </button>
-
-      {/* Dash button - above the fire button */}
+      {/* Dash button - bottom right */}
       <button
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId);
           touchInput.dashRequested = true;
         }}
-        className="pixel-btn pointer-events-auto absolute bottom-32 right-9 w-14 h-14 rounded-full bg-cyan-700 active:bg-cyan-600 text-slate-950 flex flex-col items-center justify-center touch-none"
+        className="pixel-btn pointer-events-auto absolute bottom-8 right-6 w-20 h-20 rounded-full bg-cyan-700 active:bg-cyan-600 text-slate-950 flex flex-col items-center justify-center touch-none"
       >
-        <Shield className="w-5 h-5" />
-        <span className="text-[7px] font-pixel mt-0.5">DASH</span>
+        <Shield className="w-7 h-7" />
+        <span className="text-[9px] font-pixel mt-1">DASH</span>
       </button>
     </div>
   );

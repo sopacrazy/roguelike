@@ -1,22 +1,11 @@
 import { useEffect, useState } from 'react';
-
-// A width-only breakpoint misses phones held in landscape (wide but short).
-// Using the smaller of width/height instead catches portrait AND landscape,
-// and `(pointer: coarse)` catches real touch devices/emulation regardless of
-// window size.
-const SMALL_DIMENSION_THRESHOLD = 560;
-
-function computeIsMobile(): boolean {
-  const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches ?? false;
-  const smallestSide = Math.min(window.innerWidth, window.innerHeight);
-  return coarsePointer || smallestSide < SMALL_DIMENSION_THRESHOLD;
-}
+import { isMobileDevice } from '../utils/isMobileDevice';
 
 export function useIsMobileLayout(): boolean {
-  const [isMobile, setIsMobile] = useState(computeIsMobile);
+  const [isMobile, setIsMobile] = useState(isMobileDevice);
 
   useEffect(() => {
-    const handler = () => setIsMobile(computeIsMobile());
+    const handler = () => setIsMobile(isMobileDevice());
     window.addEventListener('resize', handler);
     window.addEventListener('orientationchange', handler);
     return () => {
