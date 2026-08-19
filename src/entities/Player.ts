@@ -157,6 +157,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (moving) {
       const dir = new Phaser.Math.Vector2(moveX, moveY).normalize();
       this.setVelocity(dir.x * this.stats.speed, dir.y * this.stats.speed);
+      this.setScale(1, 1); // reset the idle breathing pulse while walking
 
       // Walk cycle animation
       this.walkAnimTimer += delta;
@@ -168,6 +169,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     } else {
       this.setVelocity(0, 0);
       this.setTexture('player_idle');
+
+      // Idle breathing: a slow vertical scale pulse so standing still
+      // doesn't read as frozen. Purely visual - the collision hitbox was
+      // already fixed via setSize() in the constructor, so this doesn't
+      // affect gameplay.
+      const breathScale = 1 + Math.sin(time / 280) * 0.025;
+      this.setScale(1, breathScale);
     }
 
     // Attack: left mouse held (desktop) or auto-fire at a nearby enemy (mobile)

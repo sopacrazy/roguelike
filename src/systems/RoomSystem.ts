@@ -246,6 +246,47 @@ export class RoomSystem {
     });
   }
 
+  // Doors used a fixed depth below the player, so he always drew in front
+  // of them - walking through a doorway just slid the sprite over the door
+  // instead of looking like he'd actually stepped into the passage. Flip
+  // the door in front of the player while he's still approaching it (not
+  // yet crossed, in the direction that door is walked through) and back
+  // behind him once he's through, so the doorway reads as an opening he
+  // passes into rather than a decal he slides across.
+  public updateDoorDepths(player: { x: number; y: number }, playerDepth: number) {
+    // The door texture's stone frame (the part that should actually occlude
+    // the player) is only a thin ~6px band at the top/sides of the 64x48
+    // canvas - the rest is the dark open passage/floor, drawn all the way
+    // down. The door sprite is anchored at its center (door.x/y = local
+    // (32,24)), so that frame edge sits 18px above center in world space.
+    // Using the sprite's center as the crossover point instead made the
+    // player stay hidden behind almost the whole passage graphic, not just
+    // the frame - he'd vanish for most of the walk instead of just the lip.
+    const frameEdgeOffset = 18;
+    this.rooms.forEach((room) => {
+      room.doors.forEach((door) => {
+        if (!door.sprite) return;
+        let approaching: boolean;
+        switch (door.direction) {
+          case 'down':
+            approaching = player.y < door.y - frameEdgeOffset;
+            break;
+          case 'up':
+            approaching = player.y > door.y + frameEdgeOffset;
+            break;
+          case 'right':
+            approaching = player.x < door.x - frameEdgeOffset;
+            break;
+          case 'left':
+          default:
+            approaching = player.x > door.x + frameEdgeOffset;
+            break;
+        }
+        door.sprite.setDepth(approaching ? playerDepth + 1 : 6);
+      });
+    });
+  }
+
   public checkPlayerRoom(playerX: number, playerY: number, player: any) {
     this.playerRef = player;
     const tileX = Math.floor(playerX / 32);

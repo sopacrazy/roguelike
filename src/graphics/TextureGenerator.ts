@@ -419,56 +419,45 @@ export class TextureGenerator {
       ctx.ellipse(16, 29, 9, 3, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Legs / Boots
-      ctx.fillStyle = '#1e293b';
+      // Leather Boots
+      ctx.fillStyle = '#451a03';
       ctx.fillRect(11 + f.legOffset, 22, 4, 7);
       ctx.fillRect(17 - f.legOffset, 22, 4, 7);
-      ctx.fillStyle = '#475569';
-      ctx.fillRect(11 + f.legOffset, 27, 4, 2);
-      ctx.fillRect(17 - f.legOffset, 27, 4, 2);
 
-      // Torso / Steel Armor Plate
-      ctx.fillStyle = '#64748b';
+      // Quiver of arrows on the back
+      ctx.fillStyle = '#92400e';
+      ctx.fillRect(7, 10, 4, 12);
+      ctx.fillStyle = '#34d399';
+      ctx.fillRect(6, 6, 2, 4);
+      ctx.fillRect(8, 5, 2, 5);
+
+      // Green Ranger Tunic
+      ctx.fillStyle = '#166534';
       ctx.fillRect(10, 13, 12, 10);
-      ctx.fillStyle = '#94a3b8';
+      ctx.fillStyle = '#15803d';
       ctx.fillRect(12, 14, 8, 8);
 
-      // Belt with Gold Buckle
+      // Belt with Buckle
       ctx.fillStyle = '#78350f';
       ctx.fillRect(10, 21, 12, 2);
-      ctx.fillStyle = '#f59e0b';
-      ctx.fillRect(15, 21, 2, 2);
+      ctx.fillStyle = '#d97706';
+      ctx.fillRect(14, 20, 4, 3);
 
-      // Red Cape behind shoulders
-      ctx.fillStyle = '#b91c1c';
-      ctx.fillRect(8, 14, 3, 10);
-      ctx.fillRect(21, 14, 3, 10);
+      // Emerald Hood
+      ctx.fillStyle = '#14532d';
+      ctx.fillRect(9, 3, 14, 11);
+      ctx.fillStyle = '#166534';
+      ctx.fillRect(10, 4, 12, 9);
 
-      // Helmet / Head
-      ctx.fillStyle = '#475569';
-      ctx.fillRect(10, 4, 12, 10);
-      // Face Visor slit
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(12, 8, 8, 3);
-      // Red Plume
-      ctx.fillStyle = '#dc2626';
-      ctx.fillRect(14, 1, 4, 4);
-      ctx.fillRect(12, 2, 2, 3);
+      // Cyan-glow eyes
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(13, 8, 2, 2);
+      ctx.fillRect(17, 8, 2, 2);
 
       // Arm on right (the bow itself is a separate overlay sprite that
       // rotates independently to track the mouse cursor - see createPlayerBowTexture)
-      ctx.fillStyle = '#64748b';
+      ctx.fillStyle = '#166534';
       ctx.fillRect(21, 15, 3, 5);
-
-      // Quiver of arrows on the back
-      ctx.fillStyle = '#5b3a1e';
-      ctx.fillRect(7, 12, 4, 9);
-      ctx.fillStyle = '#94a3b8';
-      ctx.fillRect(7, 9, 1, 5);
-      ctx.fillRect(9, 8, 1, 6);
-      ctx.fillStyle = '#dc2626';
-      ctx.fillRect(7, 9, 1, 2);
-      ctx.fillRect(9, 8, 1, 2);
 
       canvas.refresh();
     });

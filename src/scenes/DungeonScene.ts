@@ -289,6 +289,7 @@ export class DungeonScene extends Phaser.Scene {
 
     // Update Room System
     this.roomSystem.checkPlayerRoom(this.player.x, this.player.y, this.player);
+    this.roomSystem.updateDoorDepths(this.player, this.player.depth);
 
     // Check in-flight arrows against enemies every frame (an arrow can
     // travel across several frames before it connects or expires)
