@@ -27,7 +27,17 @@ export interface RoomData {
   active: boolean;
   type: 'start' | 'combat' | 'treasure' | 'boss';
   doors: RoomDoor[];
+  // Base pattern of one wave (positions + types). For rooms fought in waves,
+  // this same pattern is recycled every wave rather than defining dozens of
+  // spawn points by hand.
   enemySpawns: Array<{ type: 'slime' | 'skeleton' | 'archer' | 'boss'; x: number; y: number }>;
+  // Total enemies to clear across every wave in this room. Defaults to
+  // enemySpawns.length (a single wave) when omitted.
+  totalEnemies?: number;
+  // How many enemies spawn per wave. Defaults to enemySpawns.length when omitted.
+  waveSize?: number;
+  // Runtime counter: how many enemies have been spawned so far, across all waves.
+  enemiesSpawnedCount: number;
   chest?: { x: number; y: number; opened: boolean; sprite?: Phaser.Physics.Arcade.Sprite };
 }
 
@@ -38,6 +48,8 @@ export class RoomSystem {
   public activeEnemies: Enemy[] = [];
   public doorGroup: Phaser.Physics.Arcade.StaticGroup;
   public chestGroup: Phaser.Physics.Arcade.StaticGroup;
+  private playerRef: any = null;
+  private waveTimer: Phaser.Time.TimerEvent | null = null;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -63,6 +75,7 @@ export class RoomSystem {
         { x: 17 * 32, y: 14 * 32, width: 64, height: 32, direction: 'down', targetRoomId: 'room_2' },
       ],
       enemySpawns: [],
+      enemiesSpawnedCount: 0,
     };
 
     // Room 2: Sala com Inimigos (Below Room 1)
@@ -85,6 +98,9 @@ export class RoomSystem {
         { type: 'slime', x: 20 * 32, y: 21 * 32 },
         { type: 'skeleton', x: 17 * 32, y: 25 * 32 },
       ],
+      totalEnemies: 30,
+      waveSize: 3,
+      enemiesSpawnedCount: 0,
     };
 
     // Room 3: Sala Grande (Central Crossroads)
@@ -110,6 +126,9 @@ export class RoomSystem {
         { type: 'skeleton', x: 21 * 32, y: 44 * 32 },
         { type: 'archer', x: 17 * 32, y: 41 * 32 },
       ],
+      totalEnemies: 50,
+      waveSize: 5,
+      enemiesSpawnedCount: 0,
     };
 
     // Room 4: Sala do Tesouro (West of Room 3)
@@ -127,6 +146,7 @@ export class RoomSystem {
         { x: 6 * 32, y: 41 * 32, width: 32, height: 64, direction: 'right', targetRoomId: 'room_3' },
       ],
       enemySpawns: [],
+      enemiesSpawnedCount: 0,
       chest: {
         x: 0 * 32,
         y: 40 * 32,
@@ -156,6 +176,9 @@ export class RoomSystem {
         { type: 'archer', x: 39 * 32, y: 42 * 32 },
         { type: 'archer', x: 31 * 32, y: 45 * 32 },
       ],
+      totalEnemies: 50,
+      waveSize: 5,
+      enemiesSpawnedCount: 0,
     };
 
     // Room 6: Sala do Boss (South of Room 5)
@@ -175,6 +198,7 @@ export class RoomSystem {
       enemySpawns: [
         { type: 'boss', x: 36 * 32, y: 60 * 32 },
       ],
+      enemiesSpawnedCount: 0,
     };
 
     this.rooms.set(room1.id, room1);
@@ -214,6 +238,7 @@ export class RoomSystem {
   }
 
   public checkPlayerRoom(playerX: number, playerY: number, player: any) {
+    this.playerRef = player;
     const tileX = Math.floor(playerX / 32);
     const tileY = Math.floor(playerY / 32);
 
@@ -247,6 +272,7 @@ export class RoomSystem {
 
   private lockAndActivateRoom(room: RoomData, player: any) {
     room.active = true;
+    this.playerRef = player;
 
     // Lock doors
     SoundFX.playDoorLock();
@@ -258,16 +284,48 @@ export class RoomSystem {
       }
     });
 
-    // Spawn puff & Enemies
+    // Spawn puff & first wave of enemies
     this.scene.time.delayedCall(400, () => {
-      this.spawnEnemiesForRoom(room, player);
+      this.spawnWave(room);
+
+      // Further waves drop in on a fixed clock instead of waiting for the
+      // room to be cleared - enemies pile up if the player can't keep pace,
+      // ramping up the difficulty. The timer self-destructs once every wave
+      // has been spawned (spawnWave becomes a no-op after that anyway, but
+      // there's no reason to keep ticking).
+      const totalEnemies = room.totalEnemies ?? room.enemySpawns.length;
+      if (room.enemiesSpawnedCount < totalEnemies) {
+        this.waveTimer = this.scene.time.addEvent({
+          delay: 5000,
+          loop: true,
+          callback: () => {
+            this.spawnWave(room);
+            if (room.enemiesSpawnedCount >= totalEnemies) {
+              this.waveTimer?.remove();
+              this.waveTimer = null;
+            }
+          },
+        });
+      }
     });
   }
 
-  private spawnEnemiesForRoom(room: RoomData, player: any) {
-    this.activeEnemies = [];
+  // Spawns the next batch of enemies for a room, recycling its base
+  // enemySpawns pattern as many times as needed to reach totalEnemies. Rooms
+  // without totalEnemies/waveSize just spawn everything in a single "wave"
+  // (the original one-shot behavior). Enemies from earlier waves that are
+  // still alive stay in activeEnemies - this adds to the fight, it doesn't
+  // replace it.
+  private spawnWave(room: RoomData) {
+    const totalEnemies = room.totalEnemies ?? room.enemySpawns.length;
+    const waveSize = room.waveSize ?? room.enemySpawns.length;
+    const remaining = totalEnemies - room.enemiesSpawnedCount;
+    const countThisWave = Math.max(0, Math.min(waveSize, remaining));
 
-    room.enemySpawns.forEach((spawn) => {
+    for (let i = 0; i < countThisWave; i++) {
+      const spawn = room.enemySpawns[room.enemiesSpawnedCount % room.enemySpawns.length];
+      room.enemiesSpawnedCount++;
+
       // Spawn puff animation
       const smoke = this.scene.add.sprite(spawn.x, spawn.y, 'particle_smoke');
       smoke.setScale(0.5);
@@ -291,34 +349,52 @@ export class RoomSystem {
         enemy = new Boss(this.scene, spawn.x, spawn.y);
       }
 
-      if (enemy) {
-        enemy.setPlayer(player);
+      if (enemy && this.playerRef) {
+        enemy.setPlayer(this.playerRef);
         this.activeEnemies.push(enemy);
       }
-    });
+    }
 
+    this.emitEnemiesUpdated(room);
+  }
+
+  private emitEnemiesUpdated(room: RoomData) {
     const scene = this.scene as any;
     if (scene.onEnemiesUpdated) {
-      scene.onEnemiesUpdated(this.activeEnemies.length);
+      const total = room.totalEnemies ?? room.enemySpawns.length;
+      const defeatedSoFar = room.enemiesSpawnedCount - this.activeEnemies.length;
+      scene.onEnemiesUpdated({
+        active: this.activeEnemies.length,
+        remainingInRoom: total - defeatedSoFar,
+        totalInRoom: total,
+      });
     }
   }
 
   public handleEnemyDeath(enemy: Enemy) {
     this.activeEnemies = this.activeEnemies.filter((e) => e !== enemy && e.active && e.state !== 'dead');
 
-    const scene = this.scene as any;
-    if (scene.onEnemiesUpdated) {
-      scene.onEnemiesUpdated(this.activeEnemies.length);
-    }
+    const room = this.currentRoom;
+    if (!room || room.cleared) return;
 
-    if (this.activeEnemies.length === 0 && this.currentRoom && !this.currentRoom.cleared) {
-      this.unlockAndClearRoom(this.currentRoom);
+    this.emitEnemiesUpdated(room);
+
+    // The room only opens once every wave has been spawned (the 5s timer in
+    // lockAndActivateRoom handles that) AND nothing from any wave is left alive.
+    const totalEnemies = room.totalEnemies ?? room.enemySpawns.length;
+    if (this.activeEnemies.length === 0 && room.enemiesSpawnedCount >= totalEnemies) {
+      this.unlockAndClearRoom(room);
     }
   }
 
   private unlockAndClearRoom(room: RoomData) {
     room.cleared = true;
     room.active = false;
+
+    if (this.waveTimer) {
+      this.waveTimer.remove();
+      this.waveTimer = null;
+    }
 
     SoundFX.playDoorUnlock();
 

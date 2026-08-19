@@ -21,7 +21,8 @@ export class DungeonScene extends Phaser.Scene {
     dashCdProgress: number;
     attackCdProgress: number;
     currentRoomName: string;
-    enemiesLeft: number;
+    enemiesRemainingInRoom: number;
+    enemiesTotalInRoom: number;
     bossHp: number | null;
     bossMaxHp: number | null;
   }) => void;
@@ -31,7 +32,7 @@ export class DungeonScene extends Phaser.Scene {
   public onBossDefeated?: () => void;
   public onRoomCleared?: (room: RoomData) => void;
   public onRoomChanged?: (room: RoomData) => void;
-  public onEnemiesUpdated?: (count: number) => void;
+  public onEnemiesUpdated?: (data: { active: number; remainingInRoom: number; totalInRoom: number }) => void;
 
   public totalEnemiesDefeated: number = 0;
   public gameStartTime: number = 0;
@@ -47,6 +48,19 @@ export class DungeonScene extends Phaser.Scene {
     this.gameStartTime = this.time.now;
     this.isGameWon = false;
     this.isGameOver = false;
+
+    // Phaser reuses this Scene instance across scene.restart() calls (only
+    // the lifecycle methods re-run, not the constructor), so class-level
+    // arrays populated during create() must be reset here. Otherwise
+    // addDecorations() below keeps pushing onto last run's torches array,
+    // which still holds sprites Phaser already destroyed on scene shutdown -
+    // animating one of those in update() throws and freezes the whole loop.
+    this.torches = [];
+    this.torchesAnimTimer = 0;
+
+    // Background music starts once here and just loops through restarts
+    // (startMusic() no-ops if it's already playing)
+    SoundFX.startMusic();
 
     // Generate all procedural pixel art textures
     TextureGenerator.generateAll(this);
@@ -299,13 +313,18 @@ export class DungeonScene extends Phaser.Scene {
 
     // Emit HUD Updates
     if (this.onHudUpdate) {
+      const room = this.roomSystem.currentRoom;
+      const totalInRoom = room ? room.totalEnemies ?? room.enemySpawns.length : 0;
+      const defeatedInRoom = room ? room.enemiesSpawnedCount - this.roomSystem.activeEnemies.length : 0;
+
       this.onHudUpdate({
         hp: this.player.hp,
         maxHp: this.player.stats.maxHp,
         dashCdProgress: this.player.getDashCooldownProgress(time),
         attackCdProgress: this.player.getAttackCooldownProgress(time),
         currentRoomName: this.roomSystem.currentRoom ? this.roomSystem.currentRoom.name : 'Dungeon',
-        enemiesLeft: this.roomSystem.activeEnemies.length,
+        enemiesRemainingInRoom: room && !room.cleared ? totalInRoom - defeatedInRoom : 0,
+        enemiesTotalInRoom: totalInRoom,
         bossHp: bossObj ? bossObj.hp : null,
         bossMaxHp: bossObj ? bossObj.maxHp : null,
       });

@@ -1,0 +1,9 @@
+{
+  "name": "Dungeon Crawler Roguelike 2D",
+  "short_name": "Dungeon Crawler",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#09080e",
+  "theme_color": "#09080e"
+}

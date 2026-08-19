@@ -2,6 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import Phaser from 'phaser';
 import { DungeonScene } from '../scenes/DungeonScene';
 import { GameHUD } from '../ui/GameHUD';
+import { TouchControls } from '../ui/TouchControls';
+import { OrientationGate } from '../ui/OrientationGate';
+import { SplashScreen } from '../ui/SplashScreen';
 import { UpgradeModal } from '../ui/UpgradeModal';
 import { GameOverModal } from '../ui/GameOverModal';
 import { VictoryModal } from '../ui/VictoryModal';
@@ -19,7 +22,8 @@ export const GameContainer: React.FC = () => {
   const [dashCdProgress, setDashCdProgress] = useState<number>(1);
   const [attackCdProgress, setAttackCdProgress] = useState<number>(1);
   const [currentRoomName, setCurrentRoomName] = useState<string>('Sala Inicial');
-  const [enemiesLeft, setEnemiesLeft] = useState<number>(0);
+  const [enemiesRemainingInRoom, setEnemiesRemainingInRoom] = useState<number>(0);
+  const [enemiesTotalInRoom, setEnemiesTotalInRoom] = useState<number>(0);
   const [bossHp, setBossHp] = useState<number | null>(null);
   const [bossMaxHp, setBossMaxHp] = useState<number | null>(null);
   const [appliedUpgrades, setAppliedUpgrades] = useState<string[]>([]);
@@ -32,9 +36,13 @@ export const GameContainer: React.FC = () => {
   const [isVictory, setIsVictory] = useState<boolean>(false);
   const [enemiesDefeated, setEnemiesDefeated] = useState<number>(0);
   const [elapsedTime, setElapsedTime] = useState<number>(0);
+  const [hasStarted, setHasStarted] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    // The Phaser game (and its canvas) only gets created once the player
+    // presses "Jogar" - this also means the click that starts it doubles as
+    // the user-gesture browser autoplay policies require before audio can play.
+    if (!hasStarted || !containerRef.current) return;
 
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
@@ -70,7 +78,8 @@ export const GameContainer: React.FC = () => {
         setDashCdProgress(data.dashCdProgress);
         setAttackCdProgress(data.attackCdProgress);
         setCurrentRoomName(data.currentRoomName);
-        setEnemiesLeft(data.enemiesLeft);
+        setEnemiesRemainingInRoom(data.enemiesRemainingInRoom);
+        setEnemiesTotalInRoom(data.enemiesTotalInRoom);
         setBossHp(data.bossHp);
         setBossMaxHp(data.bossMaxHp);
       };
@@ -103,7 +112,7 @@ export const GameContainer: React.FC = () => {
       game.destroy(true);
       gameRef.current = null;
     };
-  }, []);
+  }, [hasStarted]);
 
   const handleSelectUpgrade = (upgrade: Upgrade) => {
     const scene = sceneRef.current;
@@ -139,26 +148,40 @@ export const GameContainer: React.FC = () => {
 
   return (
     <div className="relative w-full h-full min-h-screen bg-slate-950 flex flex-col items-center justify-center overflow-hidden">
+      {/* Blocks play on mobile until the phone is rotated to landscape */}
+      <OrientationGate />
+
+      {/* Splash screen - the Phaser game only mounts after "Jogar" is pressed */}
+      {!hasStarted && <SplashScreen onPlay={() => setHasStarted(true)} />}
+
       {/* Game Canvas Container */}
       <div
         ref={containerRef}
         className="relative w-full h-full flex-1 max-w-full max-h-screen overflow-hidden cursor-crosshair"
       />
 
-      {/* React HUD Overlay */}
-      <GameHUD
-        hp={hp}
-        maxHp={maxHp}
-        dashCdProgress={dashCdProgress}
-        attackCdProgress={attackCdProgress}
-        currentRoomName={currentRoomName}
-        enemiesLeft={enemiesLeft}
-        bossHp={bossHp}
-        bossMaxHp={bossMaxHp}
-        appliedUpgrades={appliedUpgrades}
-        isMuted={isMuted}
-        onToggleMute={handleToggleMute}
-      />
+      {hasStarted && (
+        <>
+          {/* React HUD Overlay */}
+          <GameHUD
+            hp={hp}
+            maxHp={maxHp}
+            dashCdProgress={dashCdProgress}
+            attackCdProgress={attackCdProgress}
+            currentRoomName={currentRoomName}
+            enemiesRemainingInRoom={enemiesRemainingInRoom}
+            enemiesTotalInRoom={enemiesTotalInRoom}
+            bossHp={bossHp}
+            bossMaxHp={bossMaxHp}
+            appliedUpgrades={appliedUpgrades}
+            isMuted={isMuted}
+            onToggleMute={handleToggleMute}
+          />
+
+          {/* Touch Controls (mobile only) */}
+          <TouchControls />
+        </>
+      )}
 
       {/* Upgrade Selection Modal */}
       {showUpgradeModal && (

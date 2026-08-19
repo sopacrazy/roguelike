@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_CONFIG } from '../config/gameConfig';
 import { SoundFX } from '../audio/SoundFX';
+import { touchInput } from '../game/TouchInputState';
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
   public hp: number;
@@ -83,9 +84,17 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   public update(time: number, delta: number, pointer: Phaser.Input.Pointer) {
     if (!this.active || this.hp <= 0) return;
 
-    // Calculate aim angle to mouse cursor
-    const worldPoint = pointer.positionToCamera(this.scene.cameras.main) as Phaser.Math.Vector2;
-    this.aimAngle = Phaser.Math.Angle.Between(this.x, this.y, worldPoint.x, worldPoint.y);
+    // Aim: mouse cursor on desktop, auto-aim at the nearest enemy while the
+    // touch fire button is held on mobile (no cursor to aim with there).
+    if (touchInput.firing) {
+      const nearestAngle = this.findNearestEnemyAngle();
+      if (nearestAngle !== null) {
+        this.aimAngle = nearestAngle;
+      }
+    } else {
+      const worldPoint = pointer.positionToCamera(this.scene.cameras.main) as Phaser.Math.Vector2;
+      this.aimAngle = Phaser.Math.Angle.Between(this.x, this.y, worldPoint.x, worldPoint.y);
+    }
 
     // Flip sprite towards cursor
     this.setFlipX(Math.cos(this.aimAngle) < 0);
@@ -102,9 +111,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.bowSprite.setDepth(Math.sin(this.aimAngle) < 0 ? this.depth - 1 : this.depth + 1);
 
     // Handle Dash
-    if (Phaser.Input.Keyboard.JustDown(this.keys.space) || (pointer.rightButtonDown && pointer.rightButtonDown())) {
+    if (
+      Phaser.Input.Keyboard.JustDown(this.keys.space) ||
+      (pointer.rightButtonDown && pointer.rightButtonDown()) ||
+      touchInput.dashRequested
+    ) {
       this.tryDash(time);
     }
+    touchInput.dashRequested = false;
 
     if (this.isDashing) {
       // Spawn ghost trail during dash
@@ -125,6 +139,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (this.keys.a?.isDown || this.keys.left?.isDown) moveX -= 1;
     if (this.keys.d?.isDown || this.keys.right?.isDown) moveX += 1;
 
+    // Fall back to the touch joystick when no keyboard key is held
+    if (moveX === 0 && moveY === 0) {
+      moveX = touchInput.moveX;
+      moveY = touchInput.moveY;
+    }
+
     const moving = moveX !== 0 || moveY !== 0;
 
     if (moving) {
@@ -143,8 +163,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.setTexture('player_idle');
     }
 
-    // Auto attack if left mouse button held down
-    if (pointer.isDown && pointer.leftButtonDown()) {
+    // Auto attack: left mouse button held (desktop) or fire button held (touch)
+    if ((pointer.isDown && pointer.leftButtonDown()) || touchInput.firing) {
       this.tryAttack(time);
     }
   }
@@ -320,6 +340,27 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   public getDamage(): number {
     return Math.round(this.stats.baseDamage * this.stats.damageMultiplier);
+  }
+
+  private findNearestEnemyAngle(): number | null {
+    const scene = this.scene as any;
+    const enemies = scene.roomSystem?.activeEnemies as Array<{ active: boolean; state: string; x: number; y: number }> | undefined;
+    if (!enemies || !enemies.length) return null;
+
+    let nearest: { x: number; y: number } | null = null;
+    let nearestDist = Infinity;
+
+    for (const enemy of enemies) {
+      if (!enemy.active || enemy.state === 'dead') continue;
+      const dist = Phaser.Math.Distance.Between(this.x, this.y, enemy.x, enemy.y);
+      if (dist < nearestDist) {
+        nearestDist = dist;
+        nearest = enemy;
+      }
+    }
+
+    if (!nearest) return null;
+    return Phaser.Math.Angle.Between(this.x, this.y, nearest.x, nearest.y);
   }
 
   public getDashCooldownProgress(time: number): number {

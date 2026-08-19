@@ -77,3 +77,13 @@
     -2px -2px 0 #000;
 }
 
+@keyframes rotate-hint {
+  0%, 15% { transform: rotate(0deg); }
+  50%, 65% { transform: rotate(-90deg); }
+  100% { transform: rotate(-90deg); }
+}
+
+.animate-rotate-hint {
+  animation: rotate-hint 1.8s ease-in-out infinite;
+}
+

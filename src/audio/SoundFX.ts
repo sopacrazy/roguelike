@@ -1,8 +1,15 @@
 // Procedural Web Audio Sound Synthesizer for Retro Dungeon Crawler
+import shadowOfTheCaveUrl from './Shadow of the Cave.mp3';
+
+const MUSIC_VOLUME = 0.5; // 50% - keeps the track from drowning out SFX
+const MUSIC_FADE_SECONDS = 2.5; // fade window at the start/end of each loop
 
 class SoundFXManager {
   private ctx: AudioContext | null = null;
   private isMuted: boolean = false;
+  private musicEl: HTMLAudioElement | null = null;
+  private musicUnlockBound: boolean = false;
+  private musicFadeRafId: number | null = null;
 
   private initCtx() {
     if (!this.ctx) {
@@ -18,10 +25,74 @@ class SoundFXManager {
 
   public setMuted(muted: boolean) {
     this.isMuted = muted;
+    if (this.musicEl) {
+      this.musicEl.muted = muted;
+    }
   }
 
   public getMuted(): boolean {
     return this.isMuted;
+  }
+
+  // Background music: starts once when the dungeon loads and loops for the
+  // whole run. Browsers block audio.play() until the user has interacted
+  // with the page at least once, so if the first attempt is rejected we
+  // just retry on the next click/keypress instead of failing silently forever.
+  public startMusic() {
+    if (this.musicEl) {
+      if (this.musicEl.paused) {
+        this.musicEl.play().catch(() => {});
+      }
+      return;
+    }
+
+    const audio = new Audio(shadowOfTheCaveUrl);
+    audio.loop = true;
+    audio.volume = MUSIC_VOLUME;
+    audio.muted = this.isMuted;
+    this.musicEl = audio;
+
+    // The track cuts abruptly where the loop wraps back to the start.
+    // Fading the volume down right before that point and back up right
+    // after smooths the seam out instead of an audible hard stop.
+    audio.addEventListener('play', () => this.startMusicFadeLoop());
+
+    const tryPlay = () => audio.play().catch(() => {});
+    tryPlay();
+
+    if (!this.musicUnlockBound) {
+      this.musicUnlockBound = true;
+      const unlock = () => tryPlay();
+      window.addEventListener('pointerdown', unlock, { once: true });
+      window.addEventListener('keydown', unlock, { once: true });
+    }
+  }
+
+  private startMusicFadeLoop() {
+    if (this.musicFadeRafId !== null) return; // already running
+
+    const step = () => {
+      const audio = this.musicEl;
+      if (!audio || audio.paused) {
+        this.musicFadeRafId = null;
+        return;
+      }
+
+      const { currentTime, duration } = audio;
+      if (duration && isFinite(duration) && duration > MUSIC_FADE_SECONDS * 2) {
+        let target = MUSIC_VOLUME;
+        if (currentTime < MUSIC_FADE_SECONDS) {
+          target = MUSIC_VOLUME * (currentTime / MUSIC_FADE_SECONDS);
+        } else if (duration - currentTime < MUSIC_FADE_SECONDS) {
+          target = MUSIC_VOLUME * ((duration - currentTime) / MUSIC_FADE_SECONDS);
+        }
+        audio.volume = Math.max(0, Math.min(MUSIC_VOLUME, target));
+      }
+
+      this.musicFadeRafId = requestAnimationFrame(step);
+    };
+
+    this.musicFadeRafId = requestAnimationFrame(step);
   }
 
   // Sword slash whoosh
