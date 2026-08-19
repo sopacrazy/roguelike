@@ -31,11 +31,13 @@ export interface RoomData {
   // this same pattern is recycled every wave rather than defining dozens of
   // spawn points by hand.
   enemySpawns: Array<{ type: 'slime' | 'skeleton' | 'archer' | 'boss'; x: number; y: number }>;
-  // Total enemies to clear across every wave in this room. Defaults to
-  // enemySpawns.length (a single wave) when omitted.
+  // Total enemies to clear across the whole room fight. Defaults to
+  // enemySpawns.length (a single wave, no replenishing) when omitted.
   totalEnemies?: number;
-  // How many enemies spawn per wave. Defaults to enemySpawns.length when omitted.
-  waveSize?: number;
+  // Ceiling on how many enemies can be alive on screen at once. The 5s
+  // timer only tops this back up when it drops below the ceiling (e.g. from
+  // kills), it never stacks past it. Defaults to enemySpawns.length when omitted.
+  maxConcurrentEnemies?: number;
   // Runtime counter: how many enemies have been spawned so far, across all waves.
   enemiesSpawnedCount: number;
   chest?: { x: number; y: number; opened: boolean; sprite?: Phaser.Physics.Arcade.Sprite };
@@ -99,7 +101,7 @@ export class RoomSystem {
         { type: 'skeleton', x: 17 * 32, y: 25 * 32 },
       ],
       totalEnemies: 30,
-      waveSize: 3,
+      maxConcurrentEnemies: 3,
       enemiesSpawnedCount: 0,
     };
 
@@ -127,7 +129,7 @@ export class RoomSystem {
         { type: 'archer', x: 17 * 32, y: 41 * 32 },
       ],
       totalEnemies: 50,
-      waveSize: 5,
+      maxConcurrentEnemies: 5,
       enemiesSpawnedCount: 0,
     };
 
@@ -177,7 +179,7 @@ export class RoomSystem {
         { type: 'archer', x: 31 * 32, y: 45 * 32 },
       ],
       totalEnemies: 50,
-      waveSize: 5,
+      maxConcurrentEnemies: 5,
       enemiesSpawnedCount: 0,
     };
 
@@ -288,11 +290,11 @@ export class RoomSystem {
     this.scene.time.delayedCall(400, () => {
       this.spawnWave(room);
 
-      // Further waves drop in on a fixed clock instead of waiting for the
-      // room to be cleared - enemies pile up if the player can't keep pace,
-      // ramping up the difficulty. The timer self-destructs once every wave
-      // has been spawned (spawnWave becomes a no-op after that anyway, but
-      // there's no reason to keep ticking).
+      // Every 5s, top the room back up to its concurrent-enemy ceiling
+      // (only replenishing what's been killed since - never stacking past
+      // it) until the room's full enemy count has been spawned. The timer
+      // self-destructs once that's done (spawnWave becomes a no-op after
+      // that anyway, but there's no reason to keep ticking).
       const totalEnemies = room.totalEnemies ?? room.enemySpawns.length;
       if (room.enemiesSpawnedCount < totalEnemies) {
         this.waveTimer = this.scene.time.addEvent({
@@ -310,17 +312,16 @@ export class RoomSystem {
     });
   }
 
-  // Spawns the next batch of enemies for a room, recycling its base
-  // enemySpawns pattern as many times as needed to reach totalEnemies. Rooms
-  // without totalEnemies/waveSize just spawn everything in a single "wave"
-  // (the original one-shot behavior). Enemies from earlier waves that are
-  // still alive stay in activeEnemies - this adds to the fight, it doesn't
-  // replace it.
+  // Tops the room's active enemies back up to its concurrent-enemy ceiling,
+  // recycling the base enemySpawns pattern as needed to reach totalEnemies.
+  // Never spawns past the ceiling even if this is called again before
+  // earlier spawns have died - it only fills the gap left by kills.
   private spawnWave(room: RoomData) {
     const totalEnemies = room.totalEnemies ?? room.enemySpawns.length;
-    const waveSize = room.waveSize ?? room.enemySpawns.length;
-    const remaining = totalEnemies - room.enemiesSpawnedCount;
-    const countThisWave = Math.max(0, Math.min(waveSize, remaining));
+    const maxConcurrent = room.maxConcurrentEnemies ?? room.enemySpawns.length;
+    const remainingToSpawn = totalEnemies - room.enemiesSpawnedCount;
+    const slotsAvailable = maxConcurrent - this.activeEnemies.length;
+    const countThisWave = Math.max(0, Math.min(slotsAvailable, remainingToSpawn));
 
     for (let i = 0; i < countThisWave; i++) {
       const spawn = room.enemySpawns[room.enemiesSpawnedCount % room.enemySpawns.length];
